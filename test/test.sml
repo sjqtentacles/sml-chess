@@ -41,6 +41,24 @@ struct
       val () = checkBool "parseFen garbage -> NONE" (false, isSome (C.parseFen "not a fen"))
       val () = checkBool "parseFen bad ranks -> NONE"
                  (false, isSome (C.parseFen "rnbqkbnr/8 w - - 0 1"))
+      (* A FEN move counter outside the fixed 32-bit `int` range must parse to
+         `NONE` on every compiler -- never raise `Overflow`.  MLton's 32-bit
+         `Int.fromString` raises past 2^31 (caught as `BadFen`) while Poly/ML's
+         63-bit int silently accepts it, so without a bounds check the two
+         compilers disagree.  Out-of-range counters now `raise BadFen`, which
+         `parseFen` surfaces as its documented `NONE`. *)
+      val () = checkBool "parseFen huge halfmove -> NONE"
+                 (false, isSome
+                    (C.parseFen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 999999999999 1"))
+      val () = checkBool "parseFen huge fullmove -> NONE"
+                 (false, isSome
+                    (C.parseFen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 999999999999"))
+      val () = checkBool "parseFen halfmove 2147483648 -> NONE"
+                 (false, isSome
+                    (C.parseFen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 2147483648 1"))
+      val () = checkString "parseFen in-range counters round-trip"
+                 ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 100 2147483647",
+                  C.toFen (fen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 100 2147483647"))
 
       val () = section "perft: start position (reference vectors)"
       val () = checkInt "perft(1) = 20" (20, C.perft C.startPos 1)

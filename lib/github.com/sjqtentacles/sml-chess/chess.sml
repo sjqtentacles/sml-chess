@@ -396,14 +396,23 @@ struct
        val ep = if epF = "-" then NONE
                 else (case squareFromString epF of
                         SOME sq => SOME sq | NONE => raise BadFen)
+       (* Parse a FEN move counter via `IntInf`, bounds-checked into the fixed
+          32-bit range.  `Int.fromString` raises `Overflow` past 2^31 on MLton
+          (32-bit int) but not on Poly/ML (63-bit int); routing through `IntInf`
+          and raising `BadFen` on out-of-range counters (which `parseFen`
+          surfaces as `NONE`) keeps decoding total and identical on both. *)
+       fun counter s =
+         case IntInf.fromString s of
+           SOME n =>
+             if n >= ~2147483648 andalso n <= 2147483647
+             then IntInf.toInt n
+             else raise BadFen
+         | NONE => raise BadFen
        val (half, full) =
          case rest of
            [] => (0, 1)
-         | [h] => (case Int.fromString h of SOME x => (x, 1) | NONE => raise BadFen)
-         | (h :: f :: _) =>
-             (case (Int.fromString h, Int.fromString f) of
-                (SOME x, SOME y) => (x, y)
-              | _ => raise BadFen)
+         | [h] => (counter h, 1)
+         | (h :: f :: _) => (counter h, counter f)
      in
        SOME { board = board, turn = turn, castle = castle,
               ep = ep, half = half, full = full }

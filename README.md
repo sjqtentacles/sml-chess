@@ -73,7 +73,10 @@ end
 ```
 
 `parseFen`, `moveFromUci`, and `parseMove` return `option` instead of raising.
-`toFen o (valOf o parseFen)` round-trips any well-formed FEN.
+`toFen o (valOf o parseFen)` round-trips any well-formed FEN. A halfmove/fullmove
+counter outside the fixed 32-bit `int` range yields `NONE` (never `Overflow`),
+so `parseFen` behaves identically under MLton (32-bit `int`) and Poly/ML
+(63-bit `int`).
 
 ## Reference vectors (perft)
 
@@ -160,17 +163,19 @@ examples/
   demo.sml     start position, perft tables, a short game
 test/
   harness.sml  shared assertion harness
-  test.sml     perft vectors + FEN/UCI/movegen/search (57 checks)
+  test.sml     perft vectors + FEN/UCI/movegen/search (61 checks)
   entry.sml / main.sml
 tools/polybuild  Poly/ML build wrapper
 ```
 
 ## Tests
 
-57 deterministic checks. The core reference vectors are perft counts from the
+61 deterministic checks. The core reference vectors are perft counts from the
 start position (`perft(4) = 197281`) and Kiwipete (`perft(2) = 2039`,
 `perft(3) = 97862`), which exercise every legality rule. Plus: FEN round-trips
-and rejection of malformed input, en-passant generation and capture,
+and rejection of malformed input (including move counters outside the 32-bit
+`int` range, which yield `NONE` rather than raising `Overflow`), en-passant
+generation and capture,
 under-/over-promotion (four moves, UCI `a7a8q`/`a7a8n`), castling (move +
 rook relocation), fool's-mate checkmate detection, a stalemate position, a
 pinned-piece test (a pinned bishop yields no legal move), UCI (de)serialization,

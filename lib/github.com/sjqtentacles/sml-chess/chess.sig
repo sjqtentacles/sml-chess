@@ -42,8 +42,10 @@ sig
   val pieceAt    : position -> int -> piece option
   val sideToMove : position -> color
 
-  (* FEN: `parseFen` returns NONE on malformed input. `toFen o parseFen`
-     round-trips any well-formed FEN. *)
+  (* FEN: `parseFen` returns NONE on malformed input -- including a
+     halfmove/fullmove counter outside the fixed 32-bit `int` range, so it is
+     total and identical under MLton and Poly/ML (never raising `Overflow`).
+     `toFen o parseFen` round-trips any well-formed FEN. *)
   val parseFen : string -> position option
   val toFen    : position -> string
 
